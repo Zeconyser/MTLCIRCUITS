@@ -28,6 +28,7 @@ for subj_dir in "${RIM_BASE}"/sub-*; do
             "${LN2_LAYERS_BIN}" \
                 -rim "${rim_file}" \
                 -nr_layers "${NR_LAYERS}" \
+                -equivol
                 -output "${out_dir}/${subj_id}_${side}_N21.nii"
         else
             echo "  WARNING: Rim file not found for ${side}: ${rim_file}"
