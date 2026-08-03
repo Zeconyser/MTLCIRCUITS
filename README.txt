@@ -12,9 +12,9 @@ This Pipeline uses several software suits and both 3T and 7T structural MRI.
 Software (Most recent version each):
  
 	FSL - for most of the registration tasks, as well as diffusion volume extraction, diffusion preprocessing (Topup and Eddy corrections) and tissue segmentation
-	MRtrix - for the diffusion-based tractography pipeline and optional Diffusion Tensor Imaging Models. 
+	MRtrix - for the diffusion-based tractography pipeline and optional Diffusion Tensor 	Imaging Models. 
 	ASHS - for automated segmentation of MTL subfields at 3T and 7T 
-	LAYNIi - for generation of Layers on MTL masks 
+	LAYNII - for generation of Layers on MTL masks 
 	(optinal: MATLAB for registrations, tissue segmenations, NORDIC denoising if 7T diffusion data becomes available) 
 
 
@@ -44,6 +44,7 @@ Project Folder (with subject Folders:
 
 
 Pipeline: 
+
 
 
 
