@@ -81,7 +81,9 @@ for t in "${TIMEPOINTS[@]}"; do
 		printf "\nEmbedding Gradient Information in dwi.mif header..." 
 		mrconvert \
 			$DWI ${BASE}/dwi_grad.mif \
+			-force \
 			-fslgrad ${BASE}/dwi.bvec ${BASE}/dwi.bval	
+			
 	
 		# 1.2.3 Apply Registration Matrix to DWI volumes and Gradient Table. STRICTLY TO ROTATE BVECS!
 			# This step is required because fsl flirt cannot adjust embedded Gradient tables when performing Transformations.  
@@ -89,12 +91,16 @@ for t in "${TIMEPOINTS[@]}"; do
 		mrtransform \
 			${BASE}/dwi_grad.mif \
 			${BASE}/rdwi_grad.mif \
+			-force \
 			-linear ${BASE}/dwi_to_t1.mat
-		mrconvert \ 
+		mrconvert \
 			${BASE}/rdwi_grad.mif \
-			-export_grad_fsl rdwi.bvec dwi.bval \
-			${BASE}/rdwi_grad.mif 
+			${BASE}/rdwi_grad.mif \
+            -export_grad_fsl ${BASE}/rdwi.bvec ${BASE}/dwi.bval \
 			-force
+			
+			 
+		
 	
 	else 
 		echo "Rotated bvectors already exist. Skipping ... " 
@@ -108,7 +114,7 @@ for t in "${TIMEPOINTS[@]}"; do
 		echo "Applying Registration to dwi volume and brain mask..."
 		
 		flirt \
-			-in ${BASE}/dwi_grad.mif \
+			-in ${BASE}/dwi.nii.gz \
 			-ref $T1 \
 			-applyxfm \
 			-init ${BASE}/dwi_to_t1.mat \
@@ -126,10 +132,10 @@ for t in "${TIMEPOINTS[@]}"; do
 
 		echo "Converting to .mif..." 		
 	
-		mrconvert ${BASE}/rbrain_mask.nii.gz ${BASE}/rbrain_mask.mif
-
-	else 
-                echo "\nDWI and b-vectors already in T1 space..."
+		mrconvert ${BASE}/rbrain_mask.nii.gz ${BASE}/rbrain_mask.mif -force
+		mrconvert ${BASE}/rdwi.nii.gz ${BASE}/rdwi.mif -force
+	    else
+                echo "\nDWI and Brain mask already in T1 space. Skipping..."
         fi
 
 
