@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# SCRIPT TO GENERATE MSP AND TSP SPECIFIC STREAMLINES FROM WB TRACTOGRAMS AND MTL SUBFIELD MASKS
+
+BASE="/Volumes/LaCieJ/Test_MTLCIRCUIT" 
+TIMEPOINTS = [ "bl_2" "fu_2" ]
+
+for t in "${TIMEPOINTS[@]}"; do 
+
+	TCK="${BASE}/$t/Tracts/WB_ACT_SIFT_2M.tck"
+	

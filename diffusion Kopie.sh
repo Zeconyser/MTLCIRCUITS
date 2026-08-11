@@ -55,13 +55,11 @@ for t in "${TIMEPOINTS[@]}"; do
         fi
 
 
-	# 1.2 Register dwi to T1 and rotate bvecs
-           
-
-	printf "\nCoregistering DWI and brain mask to T1 space..."
+	  # 1.2 Register dwi to T1 and rotate bvecs
 	
-	# 1.2.1 Estimating dwi_to_t1 transform affine
-	if [ ! -f ${BASE}/dwi_to_t1.mat ]; then
+	if [ ! -f ${BASE}/rdwi.mif ]; then
+	
+		printf "\nCoregistering DWI and brain mask to T1 space..."
 		
 		echo "estimating transform..." 
 
@@ -71,56 +69,19 @@ for t in "${TIMEPOINTS[@]}"; do
 			-omat ${BASE}/dwi_to_t1.mat \
 			-dof 6 \
 			-cost normmi 
-	else 
-		printf "\nTransformation matrix already exists. Skipping..." 
-	fi
-	
-	# 1.2.2 Convert DWI from NIFTI to MIF and embedd Gradient Table      	
-	if [ ! -f ${BASE}/rdwi.bvec ]; then	
+		
+		echo "Rotating b-vectors..." 
 
-		printf "\nEmbedding Gradient Information in dwi.mif header..." 
-		mrconvert \
-			$DWI ${BASE}/dwi_grad.mif \
-			-force \
-			-fslgrad ${BASE}/dwi.bvec ${BASE}/dwi.bval	
-			
-	
-		# 1.2.3 Apply Registration Matrix to DWI volumes and Gradient Table. STRICTLY TO ROTATE BVECS!
-        printf "\nConverting FLIRT matrix to MRtrix3 convention..."
-        transformconvert \
-            ${BASE}/dwi_to_t1.mat \
-            $B0 \
-            $T1 \
-            flirt_import \
-            ${BASE}/dwi_to_t1_mrtrix.txt
-
-        printf "\nRotating and exporting bvectors..."
-        mrtransform \
-            ${BASE}/dwi_grad.mif \
-            ${BASE}/rdwi_grad.mif \
-            -force \
-            -linear ${BASE}/dwi_to_t1_mrtrix.txt
-
-        mrconvert \
-            ${BASE}/rdwi_grad.mif \
-            ${BASE}/rdwi_grad.mif \
-            -export_grad_fsl ${BASE}/rdwi.bvec ${BASE}/dwi.bval \
-            -force
-			
-			 
-	else 
-		echo "Rotated bvectors already exist. Skipping ... " 
-	fi
-
-	
-	#1.3 Coregister the DWI and Brain Mask to the T1 anatomical space 
-
-	if [ ! -f ${BASE}/rdwi.mif ]; then
-	
+		fdt_rotate_bvecs \
+			${BASE}/dwi.bvec \
+            ${BASE}/rdwi.bvec \
+            ${BASE}/dwi_to_t1.mat
+			      	
+	 	
 		echo "Applying Registration to dwi volume and brain mask..."
 		
 		flirt \
-			-in ${BASE}/dwi.nii.gz \
+			-in $DWI \
 			-ref $T1 \
 			-applyxfm \
 			-init ${BASE}/dwi_to_t1.mat \
@@ -131,25 +92,28 @@ for t in "${TIMEPOINTS[@]}"; do
 			-ref $T1 \
 			-applyxfm \
 			-init ${BASE}/dwi_to_t1.mat \
-		        -interp nearestneighbour \
+            -interp nearestneighbour \
 			-out ${BASE}/rbrain_mask.nii.gz
 
-	
 
-		echo "Converting to .mif..." 		
-	
-		mrconvert ${BASE}/rbrain_mask.nii.gz ${BASE}/rbrain_mask.mif -force
-		mrconvert ${BASE}/rdwi.nii.gz ${BASE}/rdwi.mif -force
-	    else
-                echo "\nDWI and Brain mask already in T1 space. Skipping..."
+
+		echo "Converting to .mif..." 
+
+		
+
+		
+		mrconvert ${BASE}/rdwi.nii.gz ${BASE}/rdwi.mif
+		mrconvert ${BASE}/rbrain_mask.nii.gz ${BASE}/rbrain_mask.mif
+
+	else 
+                echo "\nDWI and b-vectors already in T1 space..."
         fi
 
 
 	
 	FOD_OUT="${BASE}/wm_fod.mif"
-	TCK_OUT="${BASE}/WB_ACT_10M.tck"
-    SIFT_OUT="${BASE}/WB_ACT_SIFT_2M.tck"
-	DWI="${BASE}/rdwi.mif"
+	TCK_OUT="${BASE}/WB_PROB_10M.tck"
+	DWI="${BASE}/rdwi.mif" 
 	
 	# 2. Estimate GM, WM, CSF Response Functions
 	
@@ -159,8 +123,8 @@ for t in "${TIMEPOINTS[@]}"; do
 			dhollander \
 			$DWI ${BASE}/wm_response.txt ${BASE}/gm_response.txt ${BASE}/csf_response.txt \
 			-fslgrad ${BASE}/rdwi.bvec ${BASE}/dwi.bval
-            -force
-	else
+
+	else 
 		echo "Response Functions already exist. Skipping..."
 	fi
 	
@@ -175,8 +139,8 @@ for t in "${TIMEPOINTS[@]}"; do
 			 -fslgrad  ${BASE}/rdwi.bvec ${BASE}/dwi.bval \
 			msmt_csd ${DWI} \
 		 	${BASE}/wm_response.txt ${BASE}/wm_fod.mif \
-		 	#${BASE}/gm_response.txt ${BASE}/gm_fod.mif \
-		 	${BASE}/csf_response.txt ${BASE}/csf_fod.mif \#
+		 	${BASE}/gm_response.txt ${BASE}/gm_fod.mif \
+		 	${BASE}/csf_response.txt ${BASE}/csf_fod.mif \
 		 	-mask ${BASE}/rbrain_mask.mif
 
 	else 
@@ -192,42 +156,36 @@ for t in "${TIMEPOINTS[@]}"; do
 		tckgen \
 			${FOD_OUT} \
 			${TCK_OUT} \
-			-act ${BASE}/5TT.mif \
+			- act ${BASE}5TT.mif \
 			-backtrack \
 			-seed_gmwmi ${BASE}/GMWMseed.mif \
 			-select 10M
-			
-    else
-        echo "Tractograms already exist. Skipping..."
-    fi
 				
 	# 5. Improve Tractogram with SIFT
-    if [ ! -f ${SIFT_OUT} ]; then
-    
+
 		echo "Improving Tractogram with SIFT..."
 
 
 		tcksift \
 			${TCK_OUT} \
 			${FOD_OUT} \
-			${SIFT_OUT} \
+			"${BASE}/WB_PROB_SIFT_2M.tck" \
 			-term_number 2M
 
 		echo "Now Generating Streamline Weights with SIFT2..."
 
 		tcksift2 \
-			${SIFT_OUT} \
+			"${BASE}/WB_PROB_SIFT_2M.tck" \
 			${FOD_OUT} \
 			"${BASE}/SIFT2_WEIGHTS.txt" \
-			-act "${BASE}/5TT.mif"
+			-act 5TT.mif
 			
-        else
-            echo "SIFT already done. Skipping..."
-        fi
-                
 
+
+	else 
+		echo "Tractograms already exist. Skipping..."
+	fi
 	
-    
 	printf "\nFinished Timepoint $t.\n"
 
 done
