@@ -1,0 +1,34 @@
+#!/bin/bash
+
+BASE="/mnt/d/Test_MTLCIRCUIT"
+timepoints=( "bl" "fu" )
+versions=( "1" "2" ) 
+hemis=( "left" "right" )
+
+
+for v in ${versions[@]}; do 
+	for t in ${timepoints[@]}; do
+		
+		WB_TCK="${BASE}/${t}_${v}/Tracts/rWB_RROB_SIFT_2M.tck"
+		python3 << PY 
+
+import nibabel as nib
+import numpy as np
+import os 
+
+for h in "$hemis": 
+	print(h)
+	p_ashs = os.path.join("$BASE", f"${t}_1", "coregistration", f"rASHS_{h}.nii.gz") 
+
+
+PY
+
+	echo $WB_TCK
+	done
+done
+
+
+
+
+	
+

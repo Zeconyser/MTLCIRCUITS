@@ -4,14 +4,14 @@ import os
 
 
 base = "/mnt/d/Test_MTLCIRCUIT" 
-timepoints = ["bl", "fu"]
+timepoints = ["bl_1", "fu_1"]
 hemis  = ["left", "right"]
 pathways = ["MSP", "TSP"]
 rois= {"CA1": 1, 
        "CA3" : 4,
        "DG" : 3, 
        "SUB" : 8, 
-       "ERC": 9, 
+       "ERC": 10
        }
 for t in timepoints: 
     print(f"\nProcessing {t}...")
@@ -22,10 +22,12 @@ for t in timepoints:
         ashs = nib.load(ashs_path) 
         ashs_img = ashs.get_fdata() 
         affine = ashs.affine
-        seg = np.zeros_like(ashs_img)
-
+        
         for roi, label in rois.items():
+            
             print(f"\nExtracting Subfield {roi}")
+            
+            seg = np.zeros_like(ashs_img)
             seg[np.where(ashs_img == label)] = label
             dest = os.path.join(base, t,  "subfields")
             if not os.path.exists(dest):
